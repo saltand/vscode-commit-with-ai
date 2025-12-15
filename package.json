@@ -1,8 +1,8 @@
 {
   "publisher": "saltand",
   "name": "commitgen",
-  "displayName": "CommitGen",
-  "version": "0.0.2",
+  "displayName": "Yet An Other Commit Gen",
+  "version": "0.0.3",
   "private": false,
   "packageManager": "pnpm@10.4.1",
   "description": "Generate commit messages from staged changes using AI",
@@ -39,7 +39,7 @@
     "res/*"
   ],
   "engines": {
-    "vscode": "^1.97.0"
+    "vscode": "^1.107.0"
   },
   "contributes": {
     "commands": [
