@@ -70,21 +70,27 @@ export interface StagedData {
 
 /**
  * Get staged files and diff from a repository
+ * Falls back to working tree changes if no staged changes exist
  */
 export async function getStagedData(repo: Repository): Promise<StagedData> {
   const indexChanges: Change[] = repo.state.indexChanges
+  const workingTreeChanges: Change[] = repo.state.workingTreeChanges
 
-  if (indexChanges.length === 0) {
-    throw new Error('No staged changes. Please stage your changes first.')
+  // Use staged changes if available, otherwise fall back to working tree changes
+  const changes = indexChanges.length > 0 ? indexChanges : workingTreeChanges
+  const isStaged = indexChanges.length > 0
+
+  if (changes.length === 0) {
+    throw new Error('No changes found. Please make some changes first.')
   }
 
   // Get relative path file list
-  const files = indexChanges.map(change =>
+  const files = changes.map(change =>
     workspace.asRelativePath(change.uri),
   )
 
-  // Get staged diff (cached = true)
-  const diff = await repo.diff(true)
+  // Get diff: cached=true for staged, cached=false for working tree
+  const diff = await repo.diff(isStaged)
 
   return { files, diff }
 }
