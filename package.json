@@ -2,7 +2,7 @@
   "publisher": "saltand",
   "name": "commitgen",
   "displayName": "Yet Another Commit Gen",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": false,
   "packageManager": "pnpm@10.4.1",
   "description": "Generate commit messages from staged changes using AI",
