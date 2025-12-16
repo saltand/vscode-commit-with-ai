@@ -48,7 +48,6 @@ const { activate, deactivate } = defineExtension(() => {
       const cancelled = cancelAIRequest()
       if (cancelled) {
         logger.info('AI request cancelled by user')
-        window.showInformationMessage('CommitGen: Generation cancelled')
       }
       isGenerating.value = false
     }

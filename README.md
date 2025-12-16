@@ -24,6 +24,7 @@
 | Command              | Title                              |
 | -------------------- | ---------------------------------- |
 | `commitgen.generate` | CommitGen: Generate Commit Message |
+| `commitgen.cancel`   | CommitGen: Cancel Generation       |
 
 <!-- commands -->
 

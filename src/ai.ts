@@ -45,6 +45,7 @@ export async function callAI(prompt: string): Promise<string> {
 
   try {
     logger.info(`Calling AI API: ${endpoint}`)
+    logger.info(`--- Prompt ---\n${prompt}`)
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -73,6 +74,8 @@ export async function callAI(prompt: string): Promise<string> {
     if (!content) {
       throw new Error('AI returned empty response')
     }
+
+    logger.info(`--- AI Response ---\n${content}`)
 
     return content.trim()
   }

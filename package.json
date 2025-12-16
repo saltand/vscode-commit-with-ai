@@ -61,12 +61,12 @@
         {
           "command": "commitgen.generate",
           "when": "scmProvider == git && !commitgen.isGenerating",
-          "group": "navigation"
+          "group": "navigation@-1"
         },
         {
           "command": "commitgen.cancel",
           "when": "scmProvider == git && commitgen.isGenerating",
-          "group": "navigation"
+          "group": "navigation@-1"
         }
       ]
     },
