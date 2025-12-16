@@ -48,15 +48,25 @@
         "title": "Generate Commit Message",
         "icon": "$(sparkle)",
         "category": "CommitGen"
+      },
+      {
+        "command": "commitgen.cancel",
+        "title": "Cancel Generation",
+        "icon": "$(debug-stop)",
+        "category": "CommitGen"
       }
     ],
     "menus": {
       "scm/title": [
         {
           "command": "commitgen.generate",
-          "when": "scmProvider == git",
-          "group": "navigation",
-          "enablement": "!commitgen.isGenerating"
+          "when": "scmProvider == git && !commitgen.isGenerating",
+          "group": "navigation"
+        },
+        {
+          "command": "commitgen.cancel",
+          "when": "scmProvider == git && commitgen.isGenerating",
+          "group": "navigation"
         }
       ]
     },

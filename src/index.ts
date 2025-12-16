@@ -1,5 +1,6 @@
 import { defineExtension, useCommand, useVscodeContext } from 'reactive-vscode'
 import { ProgressLocation, window } from 'vscode'
+import { cancelAIRequest } from './ai'
 import { generateCommitMessage } from './generate'
 import { formatError, logger } from './utils'
 
@@ -29,10 +30,26 @@ const { activate, deactivate } = defineExtension(() => {
       )
     }
     catch (error) {
-      logger.error('Generate failed:', error)
-      window.showErrorMessage(`CommitGen: ${formatError(error)}`)
+      const errorMessage = formatError(error)
+      // Don't show error for user-initiated cancellation
+      if (!errorMessage.includes('cancelled by user')) {
+        logger.error('Generate failed:', error)
+        window.showErrorMessage(`CommitGen: ${errorMessage}`)
+      }
     }
     finally {
+      isGenerating.value = false
+    }
+  })
+
+  // Register cancel command
+  useCommand('commitgen.cancel', () => {
+    if (isGenerating.value) {
+      const cancelled = cancelAIRequest()
+      if (cancelled) {
+        logger.info('AI request cancelled by user')
+        window.showInformationMessage('CommitGen: Generation cancelled')
+      }
       isGenerating.value = false
     }
   })

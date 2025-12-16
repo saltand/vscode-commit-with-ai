@@ -14,6 +14,23 @@ interface ChatCompletionResponse {
   }>
 }
 
+// Current AbortController for cancellation support
+let currentController: AbortController | null = null
+let isCancelledByUser = false
+
+/**
+ * Cancel the current AI request if one is in progress
+ */
+export function cancelAIRequest(): boolean {
+  if (currentController) {
+    isCancelledByUser = true
+    currentController.abort()
+    currentController = null
+    return true
+  }
+  return false
+}
+
 /**
  * Call OpenAI-compatible Chat Completions API
  */
@@ -21,7 +38,9 @@ export async function callAI(prompt: string): Promise<string> {
   const baseUrl = config.aiBaseUrl.replace(/\/$/, '') // Remove trailing slash
   const endpoint = `${baseUrl}/chat/completions`
 
+  isCancelledByUser = false
   const controller = new AbortController()
+  currentController = controller
   const timeout = setTimeout(() => controller.abort(), 60000) // 60s timeout
 
   try {
@@ -59,11 +78,15 @@ export async function callAI(prompt: string): Promise<string> {
   }
   catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
+      if (isCancelledByUser) {
+        throw new Error('Request cancelled by user')
+      }
       throw new Error('Request timeout after 60 seconds')
     }
     throw error
   }
   finally {
     clearTimeout(timeout)
+    currentController = null
   }
 }
