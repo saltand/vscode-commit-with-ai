@@ -7,13 +7,14 @@
 
 <!-- configs -->
 
-| Key                       | Description                                                                                                                       | Type     | Default                       |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------- |
-| `commitgen.aiBaseUrl`     | AI service base URL (OpenAI-compatible)                                                                                           | `string` | `"https://api.openai.com/v1"` |
-| `commitgen.aiModel`       | AI model name                                                                                                                     | `string` | `"gpt-4o-mini"`               |
-| `commitgen.aiKey`         | API Key for AI service                                                                                                            | `string` | `""`                          |
-| `commitgen.prompt`        | Prompt template. Use {{files}} for staged file list, {{diff}} for staged diff content, and {{history}} for recent commit messages | `string` | See package.json              |
-| `commitgen.maxDiffLength` | Maximum diff length in characters (to prevent token overflow)                                                                     | `number` | `120000`                      |
+| Key                       | Description                                                                                                                       | Type      | Default                          |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------- | -------------------------------- |
+| `commitgen.aiBaseUrl`     | AI service base URL (OpenAI-compatible)                                                                                           | `string`  | `"https://openrouter.ai/api/v1"` |
+| `commitgen.aiModel`       | AI model name                                                                                                                     | `string`  | `"deepseek/deepseek-chat"`       |
+| `commitgen.aiKey`         | API Key for AI service                                                                                                            | `string`  | `""`                             |
+| `commitgen.prompt`        | Prompt template. Use {{files}} for staged file list, {{diff}} for staged diff content, and {{history}} for recent commit messages | `string`  | See package.json                 |
+| `commitgen.maxDiffLength` | Maximum diff length in characters (to prevent token overflow)                                                                     | `number`  | `120000`                         |
+| `commitgen.streaming`     | Enable streaming output for AI responses                                                                                          | `boolean` | `false`                          |
 
 <!-- configs -->
 

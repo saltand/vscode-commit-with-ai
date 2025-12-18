@@ -1,5 +1,5 @@
 import { window } from 'vscode'
-import { callAIStream } from './ai'
+import { callAI, callAIStream } from './ai'
 import { config, validateConfig } from './config'
 import { getCommitHistory, getStagedData, selectRepository } from './git'
 import { logger, truncateDiff } from './utils'
@@ -47,11 +47,20 @@ export async function generateCommitMessage(): Promise<void> {
 
   logger.info(`Prompt assembled, length: ${prompt.length}`)
 
-  // 7. Call AI (streaming)
-  repo.inputBox.value = '' // Clear input box before streaming
-  const commitMessage = await callAIStream(prompt, (chunk) => {
-    repo.inputBox.value += chunk
-  })
+  // 7. Call AI
+  let commitMessage: string
+  repo.inputBox.value = '' // Clear input box
+
+  if (config.streaming) {
+    // Streaming mode: update input box in real-time
+    commitMessage = await callAIStream(prompt, (chunk) => {
+      repo.inputBox.value += chunk
+    })
+  }
+  else {
+    // Non-streaming mode: wait for full response
+    commitMessage = await callAI(prompt)
+  }
   logger.info('AI response received')
 
   // 8. Write final result to inputBox (trimmed)

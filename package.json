@@ -76,13 +76,13 @@
       "properties": {
         "commitgen.aiBaseUrl": {
           "type": "string",
-          "default": "https://api.openai.com/v1",
+          "default": "https://openrouter.ai/api/v1",
           "description": "AI service base URL (OpenAI-compatible)",
           "order": 1
         },
         "commitgen.aiModel": {
           "type": "string",
-          "default": "gpt-4o-mini",
+          "default": "deepseek/deepseek-chat",
           "description": "AI model name",
           "order": 2
         },
@@ -104,6 +104,12 @@
           "default": 120000,
           "description": "Maximum diff length in characters (to prevent token overflow)",
           "order": 5
+        },
+        "commitgen.streaming": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable streaming output for AI responses",
+          "order": 6
         }
       }
     }

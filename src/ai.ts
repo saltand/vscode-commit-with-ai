@@ -6,6 +6,14 @@ interface ChatMessage {
   content: string
 }
 
+interface ChatCompletionResponse {
+  choices: Array<{
+    message: {
+      content: string
+    }
+  }>
+}
+
 interface ChatCompletionChunk {
   choices: Array<{
     delta: {
@@ -32,10 +40,67 @@ export function cancelAIRequest(): boolean {
 }
 
 /**
- * Call OpenAI-compatible Chat Completions API
+ * Call OpenAI-compatible Chat Completions API (non-streaming)
  */
 export async function callAI(prompt: string): Promise<string> {
-  return callAIStream(prompt)
+  const baseUrl = config.aiBaseUrl.replace(/\/$/, '')
+  const endpoint = `${baseUrl}/chat/completions`
+
+  isCancelledByUser = false
+  const controller = new AbortController()
+  currentController = controller
+  const timeout = setTimeout(() => controller.abort(), 60000)
+
+  try {
+    logger.info(`Calling AI API (non-streaming): ${endpoint}`)
+    logger.info(`--- Prompt ---\n${prompt}`)
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${config.aiKey}`,
+      },
+      body: JSON.stringify({
+        model: config.aiModel,
+        messages: [
+          { role: 'user', content: prompt },
+        ] as ChatMessage[],
+        temperature: 0.2,
+        stream: false,
+      }),
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`API request failed (${response.status}): ${errorText}`)
+    }
+
+    const data = await response.json() as ChatCompletionResponse
+    const content = data.choices?.[0]?.message?.content
+
+    if (!content) {
+      throw new Error('AI returned empty response')
+    }
+
+    logger.info(`--- AI Response ---\n${content}`)
+
+    return content.trim()
+  }
+  catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      if (isCancelledByUser) {
+        throw new Error('Request cancelled by user')
+      }
+      throw new Error('Request timeout after 60 seconds')
+    }
+    throw error
+  }
+  finally {
+    clearTimeout(timeout)
+    currentController = null
+  }
 }
 
 /**
