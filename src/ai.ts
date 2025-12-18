@@ -6,10 +6,10 @@ interface ChatMessage {
   content: string
 }
 
-interface ChatCompletionResponse {
+interface ChatCompletionChunk {
   choices: Array<{
-    message: {
-      content: string
+    delta: {
+      content?: string
     }
   }>
 }
@@ -35,6 +35,16 @@ export function cancelAIRequest(): boolean {
  * Call OpenAI-compatible Chat Completions API
  */
 export async function callAI(prompt: string): Promise<string> {
+  return callAIStream(prompt)
+}
+
+/**
+ * Call OpenAI-compatible Chat Completions API with streaming support
+ */
+export async function callAIStream(
+  prompt: string,
+  onChunk?: (chunk: string) => void,
+): Promise<string> {
   const baseUrl = config.aiBaseUrl.replace(/\/$/, '') // Remove trailing slash
   const endpoint = `${baseUrl}/chat/completions`
 
@@ -59,6 +69,7 @@ export async function callAI(prompt: string): Promise<string> {
           { role: 'user', content: prompt },
         ] as ChatMessage[],
         temperature: 0.2,
+        stream: true,
       }),
       signal: controller.signal,
     })
@@ -68,16 +79,54 @@ export async function callAI(prompt: string): Promise<string> {
       throw new Error(`API request failed (${response.status}): ${errorText}`)
     }
 
-    const data = await response.json() as ChatCompletionResponse
+    if (!response.body) {
+      throw new Error('Response body is null')
+    }
 
-    const content = data.choices?.[0]?.message?.content
-    if (!content) {
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let fullContent = ''
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done)
+        break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || '' // Keep incomplete line in buffer
+
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed || !trimmed.startsWith('data: '))
+          continue
+
+        const data = trimmed.slice(6) // Remove 'data: ' prefix
+        if (data === '[DONE]')
+          continue
+
+        try {
+          const chunk = JSON.parse(data) as ChatCompletionChunk
+          const content = chunk.choices?.[0]?.delta?.content
+          if (content) {
+            fullContent += content
+            onChunk?.(content)
+          }
+        }
+        catch {
+          // Ignore JSON parse errors for malformed chunks
+        }
+      }
+    }
+
+    if (!fullContent) {
       throw new Error('AI returned empty response')
     }
 
-    logger.info(`--- AI Response ---\n${content}`)
+    logger.info(`--- AI Response ---\n${fullContent}`)
 
-    return content.trim()
+    return fullContent.trim()
   }
   catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
