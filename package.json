@@ -2,7 +2,7 @@
   "publisher": "saltand",
   "name": "yet-another-commit-message-generator",
   "displayName": "Yet Another Commit Message Generator",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "private": false,
   "packageManager": "pnpm@10.4.1",
   "description": "Generate commit messages from staged changes using AI",
