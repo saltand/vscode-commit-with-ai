@@ -1,10 +1,17 @@
-import type { ScopedConfigKeyTypeMap } from './generated/meta'
+import type { NestedConfigs } from './generated/meta'
 import { defineConfigObject } from 'reactive-vscode'
-import { scopedConfigs } from './generated/meta'
+import { configs } from './generated/meta'
 
-export const config = defineConfigObject<ScopedConfigKeyTypeMap>(
-  scopedConfigs.scope,
-  scopedConfigs.defaults,
+export const config = defineConfigObject<NestedConfigs['commitgen']>(
+  'commitgen',
+  {
+    aiBaseUrl: configs.commitgenAiBaseUrl.default,
+    aiModel: configs.commitgenAiModel.default,
+    aiKey: configs.commitgenAiKey.default,
+    prompt: configs.commitgenPrompt.default,
+    maxDiffLength: configs.commitgenMaxDiffLength.default,
+    streaming: configs.commitgenStreaming.default,
+  },
 )
 
 export interface ConfigValidationResult {
