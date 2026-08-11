@@ -11,10 +11,10 @@ Generate commit messages from staged changes using AI. Supports OpenAI Chat Comp
 
 | Key                       | Description                                                                                                                       | Type      | Default                          |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------- | -------------------------------- |
-| `commitgen.aiBaseUrl`     | AI service base URL                                                                                                               | `string`  | `"https://openrouter.ai/api/v1"` |
+| `commitgen.aiBaseUrl`     | AI service base URL (OpenAI-compatible)                                                                                           | `string`  | `"https://openrouter.ai/api/v1"` |
 | `commitgen.aiModel`       | AI model name                                                                                                                     | `string`  | `"deepseek/deepseek-chat"`       |
 | `commitgen.aiKey`         | API Key for AI service                                                                                                            | `string`  | `""`                             |
-| `commitgen.aiApiStyle`    | API style: `chat.completions`, `responses`, or `messages`                                                                         | `string`  | `"chat.completions"`             |
+| `commitgen.aiApiStyle`    | AI API style: chat.completions (OpenAI-compatible), responses (OpenAI Responses), or messages (Anthropic)                         | `string`  | `"chat.completions"`             |
 | `commitgen.prompt`        | Prompt template. Use {{files}} for staged file list, {{diff}} for staged diff content, and {{history}} for recent commit messages | `string`  | See package.json                 |
 | `commitgen.maxDiffLength` | Maximum diff length in characters (to prevent token overflow)                                                                     | `number`  | `120000`                         |
 | `commitgen.streaming`     | Enable streaming output for AI responses                                                                                          | `boolean` | `false`                          |
