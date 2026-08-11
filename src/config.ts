@@ -8,6 +8,7 @@ export const config = defineConfigObject<NestedConfigs['commitgen']>(
     aiBaseUrl: configs.commitgenAiBaseUrl.default,
     aiModel: configs.commitgenAiModel.default,
     aiKey: configs.commitgenAiKey.default,
+    aiApiStyle: configs.commitgenAiApiStyle.default,
     prompt: configs.commitgenPrompt.default,
     maxDiffLength: configs.commitgenMaxDiffLength.default,
     streaming: configs.commitgenStreaming.default,

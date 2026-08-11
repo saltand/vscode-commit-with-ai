@@ -88,24 +88,40 @@
           "description": "API Key for AI service",
           "order": 3
         },
+        "commitgen.aiApiStyle": {
+          "type": "string",
+          "default": "chat.completions",
+          "enum": [
+            "chat.completions",
+            "responses",
+            "messages"
+          ],
+          "enumDescriptions": [
+            "OpenAI Chat Completions API (POST /chat/completions)",
+            "OpenAI Responses API (POST /responses)",
+            "Anthropic Messages API (POST /messages)"
+          ],
+          "description": "AI API style: chat.completions (OpenAI-compatible), responses (OpenAI Responses), or messages (Anthropic)",
+          "order": 4
+        },
         "commitgen.prompt": {
           "type": "string",
           "default": "You are a helpful assistant that generates git commit messages.\n\nAnalyze the recent commit history to understand the project's commit style, language preference, and conventions. Then generate a new commit message that matches this style.\n\nRecent commit messages (for style reference):\n{{history}}\n\nStaged files:\n{{files}}\n\nStaged diff:\n{{diff}}\n\nRules:\n1. Match the language used in recent commits (English, Chinese, etc.)\n2. Follow the same commit message format and style as the history\n3. Keep the first line concise (max 72 chars)\n4. If history uses Conventional Commits (feat/fix/etc.), follow that format\n5. Be concise and focus on WHAT changed and WHY\n\nGenerate the commit message:",
           "editPresentation": "multilineText",
           "description": "Prompt template. Use {{files}} for staged file list, {{diff}} for staged diff content, and {{history}} for recent commit messages",
-          "order": 4
+          "order": 5
         },
         "commitgen.maxDiffLength": {
           "type": "number",
           "default": 120000,
           "description": "Maximum diff length in characters (to prevent token overflow)",
-          "order": 5
+          "order": 6
         },
         "commitgen.streaming": {
           "type": "boolean",
           "default": false,
           "description": "Enable streaming output for AI responses",
-          "order": 6
+          "order": 7
         }
       }
     }

@@ -1,25 +1,31 @@
+import {
+  bodyForStyle,
+  endpointForStyle,
+  extractNonStreamContent,
+  extractStreamDelta,
+  headersForStyle,
+  resolveApiStyle,
+} from './ai-api'
 import { config } from './config'
 import { logger } from './utils'
 
-interface ChatMessage {
-  role: 'system' | 'user' | 'assistant'
-  content: string
-}
+export type { AiApiStyle } from './ai-api'
+export {
+  AI_API_STYLES,
+  bodyForStyle,
+  endpointForStyle,
+  extractNonStreamContent,
+  extractStreamDelta,
+  headersForStyle,
+  resolveApiStyle,
+} from './ai-api'
 
-interface ChatCompletionResponse {
-  choices: Array<{
-    message: {
-      content: string
-    }
-  }>
-}
+const REQUEST_TIMEOUT_MS = 60_000
 
-interface ChatCompletionChunk {
-  choices: Array<{
-    delta: {
-      content?: string
-    }
-  }>
+interface BuiltRequest {
+  endpoint: string
+  headers: Record<string, string>
+  body: Record<string, unknown>
 }
 
 // Current AbortController for cancellation support
@@ -39,36 +45,91 @@ export function cancelAIRequest(): boolean {
   return false
 }
 
+function buildRequest(prompt: string, stream: boolean): BuiltRequest {
+  const style = resolveApiStyle(config.aiApiStyle)
+  return {
+    endpoint: endpointForStyle(config.aiBaseUrl, style),
+    headers: headersForStyle(config.aiKey, style),
+    body: bodyForStyle(style, config.aiModel, prompt, stream),
+  }
+}
+
+async function readSseStream(
+  body: ReadableStream<Uint8Array>,
+  style: ReturnType<typeof resolveApiStyle>,
+  onChunk?: (chunk: string) => void,
+): Promise<string> {
+  const reader = body.getReader()
+  const decoder = new TextDecoder()
+  let fullContent = ''
+  let buffer = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done)
+      break
+
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop() || ''
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+      // Skip event: lines (Anthropic named SSE) and empty lines
+      if (!trimmed || !trimmed.startsWith('data:'))
+        continue
+
+      // Support both "data: {...}" and "data:{...}"
+      const payload = trimmed.slice(5).trimStart()
+      if (!payload || payload === '[DONE]')
+        continue
+
+      try {
+        const parsed = JSON.parse(payload) as unknown
+        const content = extractStreamDelta(style, parsed)
+        if (content) {
+          fullContent += content
+          onChunk?.(content)
+        }
+      }
+      catch {
+        // Ignore JSON parse errors for malformed chunks
+      }
+    }
+  }
+
+  return fullContent
+}
+
+function mapAbortError(error: unknown): never {
+  if (error instanceof Error && error.name === 'AbortError') {
+    if (isCancelledByUser)
+      throw new Error('Request cancelled by user')
+    throw new Error('Request timeout after 60 seconds')
+  }
+  throw error
+}
+
 /**
- * Call OpenAI-compatible Chat Completions API (non-streaming)
+ * Call AI API (non-streaming). Supports chat.completions / responses / messages.
  */
 export async function callAI(prompt: string): Promise<string> {
-  const baseUrl = config.aiBaseUrl.replace(/\/$/, '')
-  const endpoint = `${baseUrl}/chat/completions`
+  const style = resolveApiStyle(config.aiApiStyle)
+  const { endpoint, headers, body } = buildRequest(prompt, false)
 
   isCancelledByUser = false
   const controller = new AbortController()
   currentController = controller
-  const timeout = setTimeout(() => controller.abort(), 60000)
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
   try {
-    logger.info(`Calling AI API (non-streaming): ${endpoint}`)
+    logger.info(`Calling AI API (non-streaming, ${style}): ${endpoint}`)
     logger.info(`--- Prompt ---\n${prompt}`)
 
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.aiKey}`,
-      },
-      body: JSON.stringify({
-        model: config.aiModel,
-        messages: [
-          { role: 'user', content: prompt },
-        ] as ChatMessage[],
-        temperature: 0.2,
-        stream: false,
-      }),
+      headers,
+      body: JSON.stringify(body),
       signal: controller.signal,
     })
 
@@ -77,25 +138,14 @@ export async function callAI(prompt: string): Promise<string> {
       throw new Error(`API request failed (${response.status}): ${errorText}`)
     }
 
-    const data = await response.json() as ChatCompletionResponse
-    const content = data.choices?.[0]?.message?.content
-
-    if (!content) {
-      throw new Error('AI returned empty response')
-    }
+    const data = await response.json()
+    const content = extractNonStreamContent(style, data)
 
     logger.info(`--- AI Response ---\n${content}`)
-
     return content.trim()
   }
   catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      if (isCancelledByUser) {
-        throw new Error('Request cancelled by user')
-      }
-      throw new Error('Request timeout after 60 seconds')
-    }
-    throw error
+    mapAbortError(error)
   }
   finally {
     clearTimeout(timeout)
@@ -104,38 +154,28 @@ export async function callAI(prompt: string): Promise<string> {
 }
 
 /**
- * Call OpenAI-compatible Chat Completions API with streaming support
+ * Call AI API with streaming support. Supports chat.completions / responses / messages.
  */
 export async function callAIStream(
   prompt: string,
   onChunk?: (chunk: string) => void,
 ): Promise<string> {
-  const baseUrl = config.aiBaseUrl.replace(/\/$/, '') // Remove trailing slash
-  const endpoint = `${baseUrl}/chat/completions`
+  const style = resolveApiStyle(config.aiApiStyle)
+  const { endpoint, headers, body } = buildRequest(prompt, true)
 
   isCancelledByUser = false
   const controller = new AbortController()
   currentController = controller
-  const timeout = setTimeout(() => controller.abort(), 60000) // 60s timeout
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
   try {
-    logger.info(`Calling AI API: ${endpoint}`)
+    logger.info(`Calling AI API (streaming, ${style}): ${endpoint}`)
     logger.info(`--- Prompt ---\n${prompt}`)
 
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.aiKey}`,
-      },
-      body: JSON.stringify({
-        model: config.aiModel,
-        messages: [
-          { role: 'user', content: prompt },
-        ] as ChatMessage[],
-        temperature: 0.2,
-        stream: true,
-      }),
+      headers,
+      body: JSON.stringify(body),
       signal: controller.signal,
     })
 
@@ -144,63 +184,19 @@ export async function callAIStream(
       throw new Error(`API request failed (${response.status}): ${errorText}`)
     }
 
-    if (!response.body) {
+    if (!response.body)
       throw new Error('Response body is null')
-    }
 
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder()
-    let fullContent = ''
-    let buffer = ''
+    const fullContent = await readSseStream(response.body, style, onChunk)
 
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done)
-        break
-
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || '' // Keep incomplete line in buffer
-
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (!trimmed || !trimmed.startsWith('data: '))
-          continue
-
-        const data = trimmed.slice(6) // Remove 'data: ' prefix
-        if (data === '[DONE]')
-          continue
-
-        try {
-          const chunk = JSON.parse(data) as ChatCompletionChunk
-          const content = chunk.choices?.[0]?.delta?.content
-          if (content) {
-            fullContent += content
-            onChunk?.(content)
-          }
-        }
-        catch {
-          // Ignore JSON parse errors for malformed chunks
-        }
-      }
-    }
-
-    if (!fullContent) {
+    if (!fullContent)
       throw new Error('AI returned empty response')
-    }
 
     logger.info(`--- AI Response ---\n${fullContent}`)
-
     return fullContent.trim()
   }
   catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      if (isCancelledByUser) {
-        throw new Error('Request cancelled by user')
-      }
-      throw new Error('Request timeout after 60 seconds')
-    }
-    throw error
+    mapAbortError(error)
   }
   finally {
     clearTimeout(timeout)
