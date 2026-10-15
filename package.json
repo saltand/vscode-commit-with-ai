@@ -2,7 +2,7 @@
   "publisher": "saltand",
   "name": "yet-another-commit-message-generator",
   "displayName": "Yet Another Commit Message Generator",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "private": false,
   "packageManager": "pnpm@10.4.1",
   "description": "Generate commit messages from staged changes using AI",
@@ -106,7 +106,7 @@
         },
         "commitgen.prompt": {
           "type": "string",
-          "default": "You are a helpful assistant that generates git commit messages.\n\nAnalyze the recent commit history to understand the project's commit style, language preference, and conventions. Then generate a new commit message that matches this style.\n\nRecent commit messages (for style reference):\n{{history}}\n\nStaged files:\n{{files}}\n\nStaged diff:\n{{diff}}\n\nRules:\n1. Match the language used in recent commits (English, Chinese, etc.)\n2. Follow the same commit message format and style as the history\n3. Keep the first line concise (max 72 chars)\n4. If history uses Conventional Commits (feat/fix/etc.), follow that format\n5. Be concise and focus on WHAT changed and WHY\n\nGenerate the commit message:",
+          "default": "You are a helpful assistant that generates git commit messages.\n\nAnalyze the recent commit history to understand the project's commit style, language preference, and conventions. Then generate a new commit message that matches this style.\n\nRecent commit messages (for style reference):\n{{history}}\n\nStaged files:\n{{files}}\n\nStaged diff:\n{{diff}}\n\nRules:\n1. Match the language used in recent commits (English, Chinese, etc.)\n2. Follow the same commit message format and style as the history\n3. Keep the first line concise (max 72 chars)\n4. If history uses Conventional Commits (feat/fix/etc.), follow that format\n5. Be concise and focus on WHAT changed and WHY\n6. Output plain text only: no markdown, no code fences, no bold/italic, no bullet lists, no extra commentary\n\nGenerate the commit message:",
           "editPresentation": "multilineText",
           "description": "Prompt template. Use {{files}} for staged file list, {{diff}} for staged diff content, and {{history}} for recent commit messages",
           "order": 5

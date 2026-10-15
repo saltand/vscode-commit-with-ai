@@ -4,6 +4,10 @@ All notable changes to "Yet Another Commit Message Generator" will be documented
 
 ## [Unreleased]
 
+## [1.0.10]
+
+- Require the default commit prompt to output plain text only, without markdown formatting
+
 ## [1.0.9]
 
 - Support multiple AI API styles via `commitgen.aiApiStyle`:

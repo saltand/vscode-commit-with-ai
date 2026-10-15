@@ -38,8 +38,7 @@ jobs:
         run: pnpm run ext:package
 
       - name: Publish Extension
-        run: npx vsxpub --no-dependencies
+        run: npx vsxpub --no-dependencies --exclude vsce
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VSCE_PAT: ${{secrets.VSCE_PAT}}
           OVSX_PAT: ${{secrets.OVSX_PAT}}
